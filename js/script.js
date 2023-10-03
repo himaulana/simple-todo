@@ -2,14 +2,21 @@ document.addEventListener('DOMContentLoaded', pageLoaded);
 
 const todos = [];
 const RENDER_EVENT = 'render-todo';
+const SAVED_EVENT = 'saved-todo';
+const STORAGE_KEY = 'TODO-APPS';
 
 function pageLoaded() {
   const submitForm = document.getElementById('form');
+
   submitForm.addEventListener('submit', function (event) {
     event.preventDefault();
     addTodo();
     event.target.reset();
   });
+
+  if (isStorageExist()) {
+    loadDataFromStorage();
+  }
 }
 
 function addTodo() {
@@ -22,6 +29,7 @@ function addTodo() {
 
   document.dispatchEvent(new Event(RENDER_EVENT));
   //RENDER_EVENT for apply data after save to array todos
+  saveTodo();
 }
 
 function generatedId() {
@@ -90,6 +98,7 @@ function addTaskToCompleted(id) {
 
   todoTarget.state = true;
   document.dispatchEvent(new Event(RENDER_EVENT));
+  saveTodo();
 }
 
 function removeTaskFromCompleted(id) {
@@ -98,6 +107,7 @@ function removeTaskFromCompleted(id) {
   if (todoTarget !== -1) {
     todos.splice(todoTarget, 1);
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveTodo();
   }
 
   return;
@@ -109,6 +119,7 @@ function undoTaskFromCompleted(id) {
   if (todoTarget !== null) {
     todoTarget.state = false;
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveTodo();
   }
 
   return;
@@ -134,6 +145,35 @@ function findTodoIndex(id) {
   return -1;
 }
 
+function saveTodo() {
+  if (isStorageExist()) {
+    const parsed = JSON.stringify(todos);
+    localStorage.setItem(STORAGE_KEY, parsed);
+    document.dispatchEvent(new Event(SAVED_EVENT));
+  }
+}
+
+function loadDataFromStorage() {
+  const serializedData = localStorage.getItem(STORAGE_KEY);
+  let data = JSON.parse(serializedData);
+
+  if (data !== null) {
+    for (const todo of data) {
+      todos.push(todo);
+    }
+  }
+
+  document.dispatchEvent(new Event(RENDER_EVENT));
+}
+
+function isStorageExist() {
+  if (typeof Storage !== 'undefined') {
+    return true;
+  }
+
+  return false;
+}
+
 function render() {
   const unCompletedTodoList = document.getElementById('uncompleted-todos');
   const completedTodoList = document.getElementById('completed-todos');
@@ -151,5 +191,9 @@ function render() {
     }
   }
 }
+
+document.addEventListener(SAVED_EVENT, function () {
+  alert('Anda berhasil membuat TODO');
+});
 
 document.addEventListener(RENDER_EVENT, render);
